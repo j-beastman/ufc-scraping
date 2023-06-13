@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "data-scraping"
+version = "0.1.0"
+description = ""
+authors = ["John <80288341+j-beastman@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "data_scraping"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.0.2"
+numpy = "^1.24.3"
+beautifulsoup4 = "^4.12.2"
+tqdm = "^4.65.0"
+isort = "^5.12.0"
+black = "^23.3.0"
+flake8 = "^6.0.0"
+autopep8 = "^2.0.2"
+bs4 = "^0.0.1"
+lxml = "^4.9.2"
+requests = "^2.31.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
