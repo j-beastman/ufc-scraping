@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-all: install lint test box_office_and_video.csv
+all: install lint test ufc-raw-data.csv
 
 install:
 	poetry install
@@ -22,7 +22,7 @@ lint:
 	#poetry run pylint boxofficepredictor
 
 clean:
-	@$(RM) example.csv
+	@$(RM) ufc-raw-data.csv
 
-##example.csv: boxofficepredictor/box_office.py
-##	poetry run python boxofficepredictor/box_office.py
+ufc-raw-data.csv: ufc-scraping/ufc-scraping.py
+	poetry run python ufc-scraping/ufc-scraping.py
