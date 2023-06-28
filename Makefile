@@ -24,5 +24,6 @@ lint:
 clean:
 	@$(RM) ufc-raw-data.csv
 
-ufc-raw-data.csv: ufc-scraping/ufc-scraping.py
-	poetry run python ufc-scraping/ufc-scraping.py
+
+data/ufc-raw-data.csv: ufc_scraping/data_script.py ufc_scraping/ufc_scraping.py
+	poetry run python ufc_scraping/data_script.py
