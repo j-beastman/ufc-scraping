@@ -1,5 +1,4 @@
 import time
-
 import requests
 from bs4 import BeautifulSoup
 
@@ -16,7 +15,7 @@ html_content = response.text
 # Specify the use of lxml parser
 soup = BeautifulSoup(html_content, "lxml")
 
-
+## What does this function do?
 # Finding the class of the element I want: Fighter names
 def find_classes(input):
     input_found = soup.find_all(string=input)
@@ -29,7 +28,6 @@ def find_classes(input):
     print(input_parents)
     # It ("get()") returns a list, but there's only 1 element in it (usually)
     return input_classes
-
 
 # What's the difference between the red corner and blue corner in the ufc
 def get_fighters():
@@ -44,7 +42,6 @@ def get_fighters():
     blue_corner_fighter_names = [element.text for element in elements]
     print(blue_corner_fighter_names)
     time.sleep(0.5)  # Appease the website
-
 
 # This function can definitely be cut in half
 def get_win_loss():
@@ -85,28 +82,28 @@ def get_win_loss():
         blue_corner_win_loss,
     )
 
-# Some outliers where you have a title fight with an unranked opponent
-# (coming up from different weight class)
-def get_fight_class():
+def get_fight_weight_class():
     elements = soup.find_all(class_="c-listing-fight__class-text")
     time.sleep(0.5)  # Appease the website
     weight_classes = [element.text for element in elements]
     print(weight_classes)
 
+# Some outliers where you have a title fight with an unranked opponent, also
+#   lots of missing data on the website for this statistic.
 # def get_fighters_ranks():
 #     elements = soup.find_all(class_="js-listing-fight__corner-rank c-listing-fight__corner-rank")
 #     time.sleep(0.5)  # Appease the website
 #     # weight_classes = [element.text for element in elements]
 #     print(elements)
 
-def get_fight_odds():
-    red_corner_odds, blue_corner_odds = list()
-    elements = soup.find_all(class_="c-listing-fight__odds-wrapper")
-    time.sleep(0.5)  # Appease the website
-    for element in elements:
-        
-    # weight_classes = [element.text for element in elements]
-    print(elements)
+# def get_fight_odds():
+#     red_corner_odds, blue_corner_odds = list()
+#     elements = soup.find_all(class_="c-listing-fight__odds-wrapper")
+#     time.sleep(0.5)  # Appease the website
+#     for element in elements:
+
+#     # weight_classes = [element.text for element in elements]
+#     print(elements)
 
 def fighter_nations():
     return None
@@ -114,3 +111,24 @@ def fighter_nations():
 # Decision (split, unanimous), Submission (round), TKO/KO (round)
 def win_method():
     return None 
+
+
+# ## Pickle snippet
+# import pickle
+# import os
+# file_to_store_results = "cache/embeddings.pcl"
+# if os.path.exists(file_to_store_results):
+#     with open(file_to_store_results, "rb") as f:
+#         encodings = pickle.load(f)
+# else:
+#     # Embed the titles
+#     box_office_encoded = model.encode(
+#         (box_office["Release"] + " - Official Trailer").str.lower()
+#     )
+#     # Pickle--to save to disk
+#     videos_encoded = model.encode(video_data["title"].str.lower())
+#     encodings = (box_office_encoded, videos_encoded)  # Some big calculations
+#     with open(file_to_store_results, "wb") as f:
+#         pickle.dump(encodings, f)
+
+print(get_fighters())
