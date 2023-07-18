@@ -1,9 +1,8 @@
 import pandas as pd
-from ufc_scraping import get_event_info
+from ufc_scraping import get_event_data
 
 
-# get_event
-df = pd.DataFrame(get_event_info(288))
-print(df.head())
+df = get_event_data()
+
 
 df.to_csv("data/ufc-raw-data.csv", index=False)
