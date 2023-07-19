@@ -13,107 +13,11 @@ from tqdm import tqdm
 memory = Memory("cache/", verbose=0)
 
 UFC_START = 'https://www.ufc.com'
-
-# Need to address the complexity of this function
-@memory.cache  # Cache not tested, but if shit is cached this should run very quick.
-def get_event_data(future=False) -> pd.DataFrame:
-    # Loop through years
-    time.sleep(0.5)
-    # Open the webpage; this line might cause issues if webdriver isn't set up, not sure how well
-    # it'll transfer over GitHub, might be an accessibility issue for others trying to run this module.
-
-    options = Options()
-    options.headless = False  # Set to False if you want to see the browser in action
-    driver = webdriver.Firefox(options=options)
-    driver.get("https://www.ufc.com/events")
-
-    if future == False:
-        # element = soup.find('a', href='#events-list-past')
-        element = driver.find_element('css selector', 'a[href="#events-list-past"]')
-        element.click()
-
-    def _find_and_click_next(index: int = 0, length: int = 3):
-        target_elements = driver.find_elements('xpath', '//a[contains(@class, "button")]'
-                                                    '[contains(@title, "Load more items")]'
-                                                    '[contains(text(), "Load More")]')
-        time.sleep(length) # Let webpage load
-        driver.execute_script("arguments[0].style.visibility = 'visible';", target_elements[index])
-        driver.execute_script("arguments[0].click();", target_elements[index])
-
-    target_elements = driver.find_elements('xpath', '//a[contains(@class, "button")]'
-                                                  '[contains(@title, "Load more items")]'
-                                                  '[contains(text(), "Load More")]')
-
-    try:
-        # Open the HTML file and read its content
-        with open('data/page_state.html', 'r', encoding='utf-8') as file:
-            html_content = file.read()
-        # Create a BeautifulSoup object from the HTML content
-        soup = BeautifulSoup(html_content, 'html.parser')
-    except:
-        i = 0
-        while target_elements is not None and (i < 113):
-            try: 
-                _find_and_click_next()
-            except StaleElementReferenceException:
-                try:
-                    _find_and_click_next(length=4) # Give it more time now.
-                except StaleElementReferenceException:
-                    if len(target_elements) > 1:
-                        # print(target_elements[1].is_enabled(), "#2 Is clickable")
-                        try:
-                            _find_and_click_next(index=1)
-                        except StaleElementReferenceException:
-                            print("Something has gone terribly wrong")
-                            exit()
-            i += 1
-        # Save the current state of the page to a file
-        with open('data/page_state.html', 'w', encoding='utf-8') as file:
-            file.write(driver.page_source)
-        # Now that all of the fights have been loaded on to 1 page, create soup object
-        soup = BeautifulSoup(driver.page_source, "lxml")
-
-    elements = soup.find_all(class_="c-card-event--result__headline")
-    # print(elements[0])
-    # print(len(elements), "Should be 656?")
-    # # if len(elements) < 600:
-    # #     exit()
-    event_titles = [element.text for element in elements]
-    datetimes = soup.find_all(class_="c-card-event--result__date tz-change-data")
-    datetime = [datetime.text for datetime in datetimes]
-    events = pd.DataFrame(columns=["EventTitle", "DateTime", "WeightClass", "RedCorner", "BlueCorner", "RedCornerNation", "BlueCornerNation"])
-    links = pd.DataFrame(columns=["EventTitle", "URL"])
-    links["EventTitle"] = event_titles
-
-    for i, element in tqdm(enumerate(elements), total=len(elements)):
-        event = pd.DataFrame(columns=["EventTitle", "DateTime", "WeightClass", "RedCorner", "BlueCorner", "RedCornerNation", "BlueCornerNation"])
-        link = element.find('a')['href']  # Get the href attribute value of the link
-        full_link = UFC_START + link
-        links["URL"][i] = full_link
-        # Send a GET request to the URL
-        driver.get(full_link)
-        # Get the HTML content from the response
-        time.sleep(2) # Maybe worth it to take this out
-        # Specify the use of lxml parser
-        soup = BeautifulSoup(driver.page_source, "lxml")
-        try: 
-            event["WeightClass"] = get_fight_weight_class(soup)
-            event["RedCorner"], event["BlueCorner"] = get_fighters(soup)
-            event["RedCornerNation"], event["BlueCornerNation"] = get_fighter_nations(soup)
-            event["EventTitle"] = event_titles[i]
-            event["DateTime"] = datetime[i]
-            events = pd.concat([events, event], ignore_index=True)
-        except ValueError: # I don't really get why this is happening--it's happening a lot
-            print("hmm couldn't get event ", event_titles[i])
-    links.to_csv("data/links_to_events.csv", index=False)
-    driver.quit()  # Couldn't find a way to do it without quitting the driver each time
-    return events
+TOTAL_UFC_EVENTS = 113 # I think this could be good--it'll phase out the shitty, old UFC events over time?
 
 # Function to get information from a specific even
-def get_numbered_event_info(event_num: int) -> dict[str, Any]:
+def get_event_info(url: str) -> dict[str, Any]:
     data = {}
-    # Specify the URL of the webpage you want to fetch
-    url = f"https://www.ufc.com/event/ufc-{event_num}"
     # Send a GET request to the URL
     response = requests.get(url)
     # Get the HTML content from the response
@@ -246,6 +150,9 @@ def get_fight_odds(soup):
 #     with open(file_to_store_results, "wb") as f:
 #         pickle.dump(encodings, f)
 
+#################################################
+## DEPRECATED AND SEEMINGLY UNUSEFUL FUNCTIONS ##
+#################################################
 # Finding the class of the element (helper function)
 def _find_html_classes_of_data(soup, input: str):
     input_found = soup.find_all(string=input)
@@ -258,3 +165,76 @@ def _find_html_classes_of_data(soup, input: str):
     print(input_parents)
     # It ("get()") returns a list, but there's only 1 element in it (usually)
     return input_classes
+
+
+# Need to address the complexity of this function--It's pretty crazy honestly
+# This function basically just creates 
+@memory.cache  # Cache not tested, but if shit is cached this should run very quick.
+def get_event_data(future=False) -> pd.DataFrame:
+    # Loop through years
+    time.sleep(0.5)
+    # Open the webpage; this line might cause issues if webdriver isn't set up, not sure how well
+    # it'll transfer over GitHub, might be an accessibility issue for others trying to run this module.
+
+    options = Options()
+    options.headless = False  # Set to False if you want to see the browser in action
+    driver = webdriver.Firefox(options=options)
+    driver.get("https://www.ufc.com/events")
+
+    if future == False:
+        # element = soup.find('a', href='#events-list-past')
+        element = driver.find_element('css selector', 'a[href="#events-list-past"]')
+        element.click()
+
+    def _find_and_click_next(index: int = 0, length: int = 3):
+        target_elements = driver.find_elements('xpath', '//a[contains(@class, "button")]'
+                                                    '[contains(@title, "Load more items")]'
+                                                    '[contains(text(), "Load More")]')
+        time.sleep(length) # Let webpage load
+        driver.execute_script("arguments[0].style.visibility = 'visible';", target_elements[index])
+        driver.execute_script("arguments[0].click();", target_elements[index])
+
+    target_elements = driver.find_elements('xpath', '//a[contains(@class, "button")]'
+                                                  '[contains(@title, "Load more items")]'
+                                                  '[contains(text(), "Load More")]')
+    
+    # try: This try, except seems unuseful, it should only be run once a week to get an updated piece of content?
+    #     # Open the HTML file and read its content
+    #     with open('data/page_state.html', 'r', encoding='utf-8') as file:
+    #         html_content = file.read()
+    #     # Create a BeautifulSoup object from the HTML content
+    #     soup = BeautifulSoup(html_content, 'html.parser')
+    # except:
+    i = 0
+    while target_elements is not None and (i < TOTAL_UFC_EVENTS):
+        try: 
+            _find_and_click_next()
+        except StaleElementReferenceException:
+            try:
+                _find_and_click_next(length=4) # Give it more time now.
+            except StaleElementReferenceException:
+                if len(target_elements) > 1:
+                    # print(target_elements[1].is_enabled(), "#2 Is clickable")
+                    try:
+                        _find_and_click_next(index=1)
+                    except StaleElementReferenceException:
+                        print("Something has gone terribly wrong")
+                        exit()
+        i += 1
+    # Save the current state of the page to a file
+    with open('data/page_state.html', 'w', encoding='utf-8') as file:
+        file.write(driver.page_source)
+    # Now that all of the fights have been loaded on to 1 page, create soup object
+    soup = BeautifulSoup(driver.page_source, "lxml")
+
+    elements = soup.find_all(class_="c-card-event--result__headline")
+    event_titles = [element.text for element in elements]
+    links = pd.DataFrame(columns=["EventTitle", "URL"])
+    links["EventTitle"] = event_titles
+
+    for i, element in tqdm(enumerate(elements), total=len(elements)):
+        link = element.find('a')['href']  # Get the href attribute value of the link
+        full_link = UFC_START + link
+        links["URL"][i] = full_link
+    links.to_csv("data/links_to_events.csv", index=False)
+    driver.quit()  # Couldn't find a way to do it without quitting the driver each time
